@@ -1,7 +1,12 @@
 services:
   web:
     build: frontend
-    command: npm start
+    command: npm run dev
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./frontend:/usr/src/app
+      - /usr/src/app/node_modules
     ports:
       - "3000:3000"
     depends_on:
@@ -9,7 +14,9 @@ services:
         condition: service_healthy
   api:
     build: api
-    command: node server.mjs
+    volumes:
+      - ./api:/usr/src/api
+    command: npx nodemon server.mjs
     ports:
       - "9000:9000"
     depends_on:
@@ -19,11 +26,13 @@ services:
     image: "redis:alpine"
     ports:
       - "6379:6379"
+    container_name: redis
+
   db:
     image: "postgres:latest"
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD:
+      POSTGRES_PASSWORD: 1234
       POSTGRES_DB: movies_db
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -33,7 +42,8 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/movie_data
+      - pgdata:/var/lib/postgresql/data
+
   adminer:
     image: adminer
     restart: always

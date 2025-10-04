@@ -1,0 +1,58 @@
+'use client'
+import { useState, useEffect } from "react";
+export default function SearchBar({ setSelectedMovie }) {
+    const [searchResults, setSearchResults] = useState([]);
+    const [searchValue, setSearchValue] = useState("");
+
+
+    function searchMovies(query) {
+        if (!query) {
+            setSearchResults([]);
+            return;
+        }
+        //search in our redis cache first
+
+        // replace spaces in query with %20 for URL encoding
+        query = query.replace(/ /g, '%20');
+        fetch(`https://localhost:9000/search/${query}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data); // Handle the search results
+                setSearchResults(data || []);
+            })
+            .catch(error => {
+                console.error('Error fetching search results:', error);
+            });
+    }
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => {
+            searchMovies(searchValue);
+        }, 300); // Adjust the debounce delay as needed
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchValue]);
+    function getYear(dateString) {
+        if (!dateString) return '';
+        return ` (${new Date(dateString).getFullYear()})`;
+    }
+    return (
+        <>
+            <input placeholder="Search Movies" value={searchValue} onChange={e => setSearchValue(e.target.value)} />
+            <ul>
+                {
+
+                    searchResults?.map(movie => {
+                        if (movie.title)
+                            return <li className="dropdown-value" key={movie.id} onClick={(e) => { setSelectedMovie(movie.id); setSearchValue(''); setSearchResults([]); }
+                            }> {movie.title}{getYear(movie.release_date)}</li>
+                    })
+                }
+            </ul >
+        </>
+    );
+}

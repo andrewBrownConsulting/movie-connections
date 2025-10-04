@@ -1,0 +1,21 @@
+.movie-theatre {
+    position: relative;
+    width: 100%;
+    height: 500px;
+}
+
+.theatre-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.movie-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
