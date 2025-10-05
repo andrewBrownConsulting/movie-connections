@@ -107,7 +107,7 @@ app.get('/credits/:actorId', async (req, res) => {
 app.get('/similar/:id', async (req, res) => {
     const originalId = req.params.id;
     //start by getting actors in this movie
-    const movieData = await fetch(`http://localhost:9001/movie/${originalId}`, {
+    const movieData = await fetch(`http://localhost:9005/movie/${originalId}`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json;charset=utf-8',
@@ -121,7 +121,7 @@ app.get('/similar/:id', async (req, res) => {
     //limit to first 10 actors
     const limitedActorsIds = actorIds.slice(0, 10);
     //query all actors in parallel
-    const actorCreditsPromises = limitedActorsIds.map(actorId => fetch(`http://localhost:9001/credits/${actorId}`, {
+    const actorCreditsPromises = limitedActorsIds.map(actorId => fetch(`http://localhost:9005/credits/${actorId}`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json;charset=utf-8',
@@ -142,7 +142,7 @@ app.get('/similar/:id', async (req, res) => {
         .sort((a, b) => movieIdCounts[b] - movieIdCounts[a]);
     const topCommonMovieIds = commonMovieIds.filter(id => id !== originalId).slice(0, 10);
     // for each movieid get details
-    const movieDetailsPromises = topCommonMovieIds.map(movieId => fetch(`http://localhost:9001/movie/${movieId}`, {
+    const movieDetailsPromises = topCommonMovieIds.map(movieId => fetch(`http://localhost:9005/movie/${movieId}`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json;charset=utf-8',
@@ -160,7 +160,7 @@ app.get('/similar/:id', async (req, res) => {
     });
     return res.json({ movies: movieDetails, cast_in_common: castInCommon });
 });
-const PORT = process.env.PORT || 9000;
+const PORT = process.env.PORT || 9004;
 
 // Load SSL key & certificate
 const options = {
@@ -170,8 +170,8 @@ const options = {
 
 // Create HTTPS server
 https.createServer(options, app).listen(PORT, () => {
-    console.log("✅ Express server running on https://localhost:" + PORT);
+    console.log("✅ Express server running on https://api:" + PORT);
 });
 http.createServer(options, app).listen((PORT + 1), () => {
-    console.log("✅ Express server running on http://localhost:" + (PORT + 1));
+    console.log("✅ Express server running on http://api:" + (PORT + 1));
 });

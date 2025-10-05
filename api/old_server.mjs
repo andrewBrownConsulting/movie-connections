@@ -163,7 +163,7 @@ app.get('/credits/:id', (req, res) => {
 app.get('/similar/:id', (req, res) => {
     const id = req.params.id;
     //start by getting actors in this movie
-    fetch(`http://localhost:9001/cast/${id}`, {
+    fetch(`http://api:9001/cast/${id}`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json;charset=utf-8',
@@ -175,7 +175,7 @@ app.get('/similar/:id', (req, res) => {
         let allMovies = [];
         let fetches = actors.map(actor_id => (
             console.log("fetching movies for actor:" + actor_id),
-            fetch(`http://localhost:9001/credits/${actor_id}`, {
+            fetch(`http://api:9001/credits/${actor_id}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json;charset=utf-8',
@@ -282,7 +282,7 @@ app.get('/people_in_common/:id1/:id2', async (req, res) => {
         return res.status(400).json({ error: 'Both Movie IDs are required' });
     }
     //search in cache first
-    const movie1ActorsResult = fetch(`http://localhost:9001/cast/${movieId1}`, {
+    const movie1ActorsResult = fetch(`http://api:9001/cast/${movieId1}`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json;charset=utf-8',

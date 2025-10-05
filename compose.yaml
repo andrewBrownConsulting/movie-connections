@@ -1,31 +1,32 @@
 services:
   movie_conns_frontend:
     build: frontend
-    command: npm run dev
+
+    command: npx next build; npm start
     environment:
       - NODE_ENV=development
+    
     volumes:
       - ./frontend:/usr/src/app
       - /usr/src/app/node_modules
-    ports:
-      - "3000:3000"
     depends_on:
       db:
         condition: service_healthy
+    ports:
+      - "3000:3000"
   api:
     build: api
     volumes:
       - ./api:/usr/src/api
     command: node server.mjs
-    ports:
-      - "9000:9000"
     depends_on:
       db:
         condition: service_healthy
+    ports:
+      - "9004:9004"
+      - "9005:9005"
   redis:
     image: "redis:alpine"
-    ports:
-      - "6379:6379"
     container_name: redis
 
   db:
@@ -39,16 +40,12 @@ services:
       interval: 1s
       timeout: 5s
       retries: 10
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
 
   adminer:
     image: adminer
     restart: always
-    ports:
-      - 8080:8080
   cloudflare-tunnel:
     image: cloudflare/cloudflared:latest
     command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_KEY}

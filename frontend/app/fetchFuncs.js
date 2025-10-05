@@ -1,10 +1,10 @@
 export async function fetchSimilarMovies(movieId, setSimilarMovies, setCastInCommon) {
-    const response = await fetch(`https://localhost:9000/similar/${movieId}`);
+    const response = await fetch(`https://localhost:9004/similar/${movieId}`);
     const data = await response.json();
     return data;
 }
 export async function fetchMovieDetails(movieId, setSelectedMovieInfo) {
-    const response = await fetch(`https://localhost:9000/movie/${movieId}`);
+    const response = await fetch(`https://localhost:9004/movie/${movieId}`);
     const data = await response.json();
     setSelectedMovieInfo(data);
     return data;
