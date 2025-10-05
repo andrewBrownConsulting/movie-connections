@@ -1,8 +1,7 @@
 'use client';
 import { useEffect, useState } from "react";
 import SearchBar from "./components/SearchBar";
-import SimilarList from "./components/SimilarList";
-import SimilarGraph from "./components/SimilarGraph.js";
+import NewSimilarGraph from "./components/NewSimilarGraph";
 export default function Home() {
   const [selectedMovie, setSelectedMovie] = useState(944);
   useEffect(() => {
@@ -17,7 +16,7 @@ export default function Home() {
           <SearchBar setSelectedMovie={setSelectedMovie} />
         </div>
       </div>
-      <SimilarGraph movieId={selectedMovie} setSelectedMovie={setSelectedMovie} />
+      <NewSimilarGraph movieId={selectedMovie} setSelectedMovie={setSelectedMovie} />
     </div>
   );
 }

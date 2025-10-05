@@ -117,7 +117,7 @@ app.get('/similar/:id', async (req, res) => {
 
     const actorIds = movieData.cast.map(actor => actor.id);
     //limit to first 10 actors
-
+    const limitedActorsIds = actorIds.slice(0, 10);
     //query all actors in parallel
     const actorCreditsPromises = limitedActorsIds.map(actorId => fetch(`http://localhost:9001/credits/${actorId}`, {
         method: 'GET',
@@ -138,8 +138,9 @@ app.get('/similar/:id', async (req, res) => {
     // sort by most common and take top 10
     const commonMovieIds = Object.keys(movieIdCounts)
         .sort((a, b) => movieIdCounts[b] - movieIdCounts[a]);
+    const topCommonMovieIds = commonMovieIds.filter(id => id !== originalId).slice(0, 10);
     // for each movieid get details
-    const movieDetailsPromises = commonMovieIds.map(movieId => fetch(`http://localhost:9001/movie/${movieId}`, {
+    const movieDetailsPromises = topCommonMovieIds.map(movieId => fetch(`http://localhost:9001/movie/${movieId}`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json;charset=utf-8',

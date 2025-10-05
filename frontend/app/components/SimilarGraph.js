@@ -55,7 +55,7 @@ export default function SimilarGraph({ movieId, setSelectedMovie }) {
         return `https://image.tmdb.org/t/p/w92${posterPath}`;
     }
     function handleNodeMouseOver(event, d) {
-        // Show tooltip or highlight node
+
         d3.select(event.currentTarget)
             .append("text")
             .text(d.title)
@@ -115,8 +115,6 @@ export default function SimilarGraph({ movieId, setSelectedMovie }) {
         const links = nodes
             .filter(n => n.id !== 'central')
             .map(n => ({ source: 'central', target: n.id }));
-        console.log(links);
-
 
         const simulation = d3.forceSimulation(nodes)
             .force("link", d3.forceLink(links).id(d => d.id).distance(gap))
@@ -183,7 +181,6 @@ export default function SimilarGraph({ movieId, setSelectedMovie }) {
             .attr("width", d => d.nodeRadius * 2)
             .attr("height", d => d.nodeRadius * 3)
             .attr("clip-path", d => `circle(${d.nodeRadius}px at ${d.nodeRadius}px ${d.nodeRadius + 4}px)`); // optional round crop
-
 
         const labelGroup = svg.append("g")
             .attr("text-anchor", "middle")
