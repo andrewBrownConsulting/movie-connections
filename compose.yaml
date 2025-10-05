@@ -8,7 +8,7 @@ services:
       - ./frontend:/usr/src/app
       - /usr/src/app/node_modules
     ports:
-      - "3000:3000"
+      - "4000:4000"
     depends_on:
       db:
         condition: service_healthy
@@ -18,14 +18,14 @@ services:
       - ./api:/usr/src/api
     command: npx nodemon server.mjs
     ports:
-      - "9000:9000"
+      - "4001:4001"
     depends_on:
       db:
         condition: service_healthy
   redis:
     image: "redis:alpine"
     ports:
-      - "6379:6379"
+      - "4002:4002"
     container_name: redis
 
   db:
@@ -40,7 +40,7 @@ services:
       timeout: 5s
       retries: 10
     ports:
-      - "5432:5432"
+      - "4003:4003"
     volumes:
       - pgdata:/var/lib/postgresql/data
 
@@ -48,6 +48,6 @@ services:
     image: adminer
     restart: always
     ports:
-      - 8080:8080
+      - 4004:4004
 volumes:
   pgdata:
