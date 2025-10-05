@@ -4,6 +4,8 @@ import http from "http";
 import path from "path";
 import express from "express";
 import cors from "cors";
+import env from "dotenv";
+env.config();
 import { getCachedMovieSearchResults, cacheMovieSearchResults } from './redis_query.mjs';
 const app = express();
 
@@ -27,7 +29,7 @@ app.get('/search/:search_input', async (req, res) => {
     const tmdbData = await fetch(`https://api.themoviedb.org/3/search/movie?query=${search_input}&include_adult=false&language=en-US&page=1`, {
         method: 'GET',
         headers: {
-            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxZWE0Yzc3YmM5MjRkMmYyNmMxMTdmYmZkY2ZkNjY2NCIsIm5iZiI6MTcyOTEyNDU4Ni41MjcsInN1YiI6IjY3MTA1OGVhNmY3NzA3YWY0MGZhNjk3MCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.QZOoB4mdc1ubs_5VGNRoPAvXZOAtwJ9t1lBTPBhfKLM',
+            'Authorization': `Bearer ${process.env.TMDB_API_KEY}`,
             'Content-Type': 'application/json;charset=utf-8'
         }
     }).then(response => response.json());
@@ -52,7 +54,7 @@ app.get('/movie/:movieId', async (req, res) => {
     const tmdbMovieData = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?language=en-US&append_to_response=videos,credits`, {
         method: 'GET',
         headers: {
-            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxZWE0Yzc3YmM5MjRkMmYyNmMxMTdmYmZkY2ZkNjY2NCIsIm5iZiI6MTcyOTEyNDU4Ni41MjcsInN1YiI6IjY3MTA1OGVhNmY3NzA3YWY0MGZhNjk3MCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.QZOoB4mdc1ubs_5VGNRoPAvXZOAtwJ9t1lBTPBhfKLM',
+            'Authorization': `Bearer ${process.env.TMDB_API_KEY}`,
             'Content-Type': 'application/json;charset=utf-8'
         }
     }).then(response => response.json());
@@ -90,7 +92,7 @@ app.get('/credits/:actorId', async (req, res) => {
     const tmdbCreditsData = await fetch(`https://api.themoviedb.org/3/person/${actorId}?append_to_response=movie_credits`, {
         method: 'GET',
         headers: {
-            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxZWE0Yzc3YmM5MjRkMmYyNmMxMTdmYmZkY2ZkNjY2NCIsIm5iZiI6MTcyOTEyNDU4Ni41MjcsInN1YiI6IjY3MTA1OGVhNmY3NzA3YWY0MGZhNjk3MCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.QZOoB4mdc1ubs_5VGNRoPAvXZOAtwJ9t1lBTPBhfKLM',
+            'Authorization': `Bearer ${process.env.TMDB_API_KEY}`,
             'Content-Type': 'application/json;charset=utf-8'
         }
     }).then(response => response.json());
