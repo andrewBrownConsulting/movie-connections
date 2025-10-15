@@ -14,7 +14,7 @@ export default function SearchBar({ setSelectedMovie }) {
 
         // replace spaces in query with %20 for URL encoding
         query = query.replace(/ /g, '%20');
-        fetch(`https://localhost:9004/search/${query}`, {
+        fetch(`http://localhost:9005/search/${query}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json;charset=utf-8'

@@ -24,7 +24,7 @@ export default function RootLayout({ children }) {
       <head>
         {/* <link rel='stylesheet' href="/styles.css" /> */}
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable}  bg-dark`}>
+      <body className={`${geistSans.variable} ${geistMono.variable}  bg-black`}>
         {children}
       </body>
     </html>

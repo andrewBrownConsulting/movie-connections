@@ -22,6 +22,7 @@ app.get('/search/:search_input', async (req, res) => {
     const cachedResults = await getCachedMovieSearchResults("search:" + search_input);
     if (cachedResults) {
         console.log("search query hit")
+        console.log(cachedResults);
         return res.json(cachedResults);
     }
 
@@ -29,7 +30,7 @@ app.get('/search/:search_input', async (req, res) => {
     const tmdbData = await fetch(`https://api.themoviedb.org/3/search/movie?query=${search_input}&include_adult=false&language=en-US&page=1`, {
         method: 'GET',
         headers: {
-            'Authorization': `Bearer ${process.env.TMDB_API_KEY}`,
+            'Authorization': `Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxZWE0Yzc3YmM5MjRkMmYyNmMxMTdmYmZkY2ZkNjY2NCIsIm5iZiI6MTcyOTEyNDU4Ni41MjcsInN1YiI6IjY3MTA1OGVhNmY3NzA3YWY0MGZhNjk3MCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.QZOoB4mdc1ubs_5VGNRoPAvXZOAtwJ9t1lBTPBhfKLM`,
             'Content-Type': 'application/json;charset=utf-8'
         }
     }).then(response => response.json());
@@ -54,7 +55,7 @@ app.get('/movie/:movieId', async (req, res) => {
     const tmdbMovieData = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?language=en-US&append_to_response=videos,credits`, {
         method: 'GET',
         headers: {
-            'Authorization': `Bearer ${process.env.TMDB_API_KEY}`,
+            'Authorization': `Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxZWE0Yzc3YmM5MjRkMmYyNmMxMTdmYmZkY2ZkNjY2NCIsIm5iZiI6MTcyOTEyNDU4Ni41MjcsInN1YiI6IjY3MTA1OGVhNmY3NzA3YWY0MGZhNjk3MCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.QZOoB4mdc1ubs_5VGNRoPAvXZOAtwJ9t1lBTPBhfKLM`,
             'Content-Type': 'application/json;charset=utf-8'
         }
     }).then(response => response.json());
@@ -92,7 +93,7 @@ app.get('/credits/:actorId', async (req, res) => {
     const tmdbCreditsData = await fetch(`https://api.themoviedb.org/3/person/${actorId}?append_to_response=movie_credits`, {
         method: 'GET',
         headers: {
-            'Authorization': `Bearer ${process.env.TMDB_API_KEY}`,
+            'Authorization': `Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxZWE0Yzc3YmM5MjRkMmYyNmMxMTdmYmZkY2ZkNjY2NCIsIm5iZiI6MTcyOTEyNDU4Ni41MjcsInN1YiI6IjY3MTA1OGVhNmY3NzA3YWY0MGZhNjk3MCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.QZOoB4mdc1ubs_5VGNRoPAvXZOAtwJ9t1lBTPBhfKLM`,
             'Content-Type': 'application/json;charset=utf-8'
         }
     }).then(response => response.json());
@@ -101,8 +102,6 @@ app.get('/credits/:actorId', async (req, res) => {
     cacheMovieSearchResults(`credits:${actorId}`, { credit_ids: credits_ids || [] });
     return res.json({ credit_ids: credits_ids || [] });
 });
-
-
 
 app.get('/similar/:id', async (req, res) => {
     const originalId = req.params.id;
@@ -170,8 +169,8 @@ const options = {
 
 // Create HTTPS server
 https.createServer(options, app).listen(PORT, () => {
-    console.log("✅ Express server running on https://api:" + PORT);
+    console.log("✅ Express server running on https://localhost:" + PORT);
 });
 http.createServer(options, app).listen((PORT + 1), () => {
-    console.log("✅ Express server running on http://api:" + (PORT + 1));
+    console.log("✅ Express server running on http://localhost:" + (PORT + 1));
 });
