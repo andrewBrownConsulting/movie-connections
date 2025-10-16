@@ -1,39 +1,54 @@
 import * as d3 from 'd3'
 import { useEffect, useRef, useState } from 'react'
 import { fetchMovieDetails, fetchSimilarMovies, getTMDBImagePath } from '../fetchFuncs';
-import { resolve } from 'styled-jsx/css';
-const width = 1000;
-const height = 500;
-const timeBetweenSpawns = 500;
+const timeBetweenSpawns = 200;
+const minScale = 1 / 50;
+const maxScale = 1 / 15;
+const mainScale = 1 / 10;
+const scaleRange = 10;
 export default function SimilarGraph({ movieId, setSelectedMovie }) {
-    const intialized = useRef(false);
     const cancelLoopRef = useRef(false);
     const svgRef = useRef(null);
     const [movieData, setMovieData] = useState([]);
     const [links, setLinks] = useState([]);
 
     async function updateSimilarMovies(mainId) {
+        const width = window.innerWidth;
+        const height = window.innerHeight
+        function getRadius(number) {
+
+            const min = width * minScale;
+            const max = width * maxScale;
+
+            if (number > scaleRange)
+                return max;
+            return min + (number / scaleRange) * (max - min);
+        }
         const similarData = await fetchSimilarMovies(mainId);
         console.log(similarData);
-        for (const item of similarData.movies) {
+        for (const entry of similarData) {
             if (cancelLoopRef.current)
                 break;
-            const newDetail = await fetchMovieDetails(item.id);
-            const radius = 40;
+            const newDetail = entry.movieDetail; //await fetchMovieDetails(.id);
+            const actorsInCommon = entry.castInCommon;
+            const radius = getRadius(actorsInCommon.length);
+            const actorsInCommonList = actorsInCommon.map(actor => "<li>" + actor.name + "</li>").join(' ')
             const id = newDetail.id;
             //randomize the spawn location
             const x = width * (Math.random())
             const y = height * (Math.random())
             const poster = getTMDBImagePath(newDetail.poster_path, radius);
             const title = newDetail.title;
-            setMovieData(prev => [...prev, { id: id, rad: radius, image: poster, x: x, y: y, title: title, opacity: 0 }]);
-            setLinks(prev => [...prev, { source: movieId, target: item.id }]);
+            setMovieData(prev => [...prev, { id: id, rad: radius, image: poster, x: x, y: y, title: title, visible: 'hidden', actorsInCommonList: actorsInCommonList }]);
+            setLinks(prev => [...prev, { source: movieId, target: id }]);
             await new Promise(resolve =>
                 setTimeout(resolve, timeBetweenSpawns));
         }
     }
 
     async function getNewMovieData() {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
         console.log('movie id is', movieId)
         cancelLoopRef.current = true;
         await new Promise(resolve => setTimeout(resolve, timeBetweenSpawns));
@@ -41,12 +56,13 @@ export default function SimilarGraph({ movieId, setSelectedMovie }) {
         d3.select(svgRef.current).select('g').remove();
         d3.select(svgRef.current).append('g').append('defs')
         setMovieData([]);
+        setLinks([]);
         fetchMovieDetails(movieId).then(res => {
-            const radius = 100;
+            const radius = width * mainScale;
             const id = res.id;
             const title = res.title
             const poster = getTMDBImagePath(res.poster_path, radius);
-            setMovieData([{ id: movieId, rad: radius, image: poster, x: width / 2, y: height / 2, title: title }]);
+            setMovieData([{ id: movieId, rad: radius, image: poster, x: width / 2, y: height / 2, title: title, main: true, visible: 'hidden' }]);
         });
         updateSimilarMovies(movieId);
     }
@@ -54,23 +70,30 @@ export default function SimilarGraph({ movieId, setSelectedMovie }) {
         getNewMovieData();
     }, [movieId]);
 
-
     useEffect(() => {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
         function handleMouseOver(e, d) {
-            console.log(d)
-            e.target.__data__.opacity = 1;
-
-            // // console.log(e)
-            // // console.log(e.target.__data__.title)
-            // d3.select(e.srcElement);
-
-            // d3.select('svg')
-            //     .append('text')
-            //     .attr('x', d.x)
-            //     .attr('y', d.y)
-            //     .attr('color', 'white')
-            //     .text(e.target.__data__.title)
-
+            d.visible = 'visible';
+            console.log('mouse over')
+            if (!d.actorsInCommonList)
+                return;
+            d3.select('#tooltip').style('visibility', 'visible')
+                .html('<h1>' + d.title + '</h1>'
+                    + '<h2>Cast in Common</h2>'
+                    + '<ul>'
+                    + d.actorsInCommonList
+                    + '</ul>'
+                )
+        }
+        function handleMouseLeave(e, d) {
+            d.visible = 'hidden';
+            d3.select('#tooltip').style('visibility', 'hidden');
+        }
+        function handleMouseMove(e, d) {
+            d3.select('#tooltip')
+                .style('top', e.offsetY + 'px')
+                .style('left', e.offsetX + 150 + 'px');
         }
         const selection = d3.select(svgRef.current).select('g');
         async function handleClick(id) {
@@ -112,13 +135,27 @@ export default function SimilarGraph({ movieId, setSelectedMovie }) {
                 .attr('height', d => d.rad * 2)
                 .attr('preserveAspectRatio', 'xMidYMid slice')
 
-            selection
+            const linkLines = selection.selectAll('line').data(links)
+                .attr('x1', d => d.source.x)
+                .attr('y1', d => d.source.y)
+                .attr('x2', d => d.target.x)
+                .attr('y2', d => d.target.y)
+                .lower()
+                .enter()
+                .append('line')
+                .attr('stroke', '#999')
+                .attr('stroke-width', 2)
+
+
+            const circles = selection
                 .selectAll('circle')
                 .data(movieData, d => d.id)
                 .attr('cx', d => d.x)
                 .attr('cy', d => d.y)
                 .on('click', (e, d) => handleClick(d.id))
                 .on('mouseover', handleMouseOver)
+                .on('mouseleave', handleMouseLeave)
+                .on('mousemove', handleMouseMove)
                 .enter()
                 .append('circle')
                 .attr('fill', d => `url(#image-${d.id})`)
@@ -127,49 +164,71 @@ export default function SimilarGraph({ movieId, setSelectedMovie }) {
                 .transition()
                 .attr('r', d => d.rad)
 
-            selection
+            const titles = selection
                 .selectAll('text')
                 .data(movieData, d => d.id)
                 .attr('x', d => d.x)
                 .attr('y', d => d.y - (d.rad + 5))
                 .attr('text-anchor', 'middle')
+                .style('visibility', d => d.visible)
+                .text(d => d.title)
+                .raise()
                 .enter()
                 .append('text')
-                .text(d => d.title)
                 .attr('font-size', '2em')
                 .attr('fill', 'white')
                 .attr('stroke', 'black')
                 .style('stroke-width', '1px')
-                .style('stroke-linejoin', 'round')
-                .attr('opacity', 1)
-                .raise()
-                .transition()
-                .delay(1000)
-                .duration(1000)
-                .attr('opacity', d => d.opacity)
-
+            // .style('stroke-linejoin', 'round')
+            //non working transition
+            // .attr('opacity', 1)
+            // .transition()
+            // .delay(1000)
+            // .duration(1000)
+            // .attr('opacity', 0)
 
         }
         const simulation = d3.forceSimulation(movieData)
+            // .force('center', d3.forceCenter(width / 2, height / 2).strength(1))
             .force('x', d3.forceX(width / 2).strength(0.01))
             .force('y', d3.forceY(height / 2).strength(0.01))
-            .force('charge', d3.forceManyBody().strength(10))
+            .force('charge', d3.forceManyBody().strength(-50))
             .force('collision', d3.forceCollide().radius(d => d.rad))
+            .force('links', d3.forceLink(links).id(d => d.id).strength(0.01))
             .alphaDecay(0)
-            // .force('links', d3.forceLink(links).id(d => d.id).strength(0.01))
             .on('tick', update);
 
+
+
         update();
-        return () => simulation.stop();
+        return () => {
+            simulation.stop();
+            d3.selectAll('line').remove();
+        };
+
     }, [movieData.length])
     useEffect(() => {
-        d3.select(svgRef.current).select('g').remove();
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        d3.select(svgRef.current).attr('width', width).attr('height', height).select('g').remove();
         const svgd3 = d3.select(svgRef.current).attr('width', width).attr('height', height);
         svgd3.append('g').append('defs')
         function handleZoom(e) {
             d3.select('g')
                 .attr('transform', e.transform);
         }
+        const tooltip = d3.select('#outer_div')
+            .append('div')
+            .attr('id', 'tooltip')
+            .attr('anchor', 'middle')
+            .style('position', 'absolute')
+            .style('visibility', 'hidden')
+            .style('background-color', 'white')
+            .style("border", "solid")
+            .style("border-width", "1px")
+            .style("border-radius", "5px")
+            .style("padding", "10px")
+            .html('<p>Here is my text</p>')
         const zoom = d3.zoom().on('zoom', handleZoom);
         svgd3.call(zoom);
         return () => d3.select('svg g').remove();
@@ -177,7 +236,9 @@ export default function SimilarGraph({ movieId, setSelectedMovie }) {
 
 
     return (
-        <svg width={width} height={height} ref={svgRef}>
-        </svg>
+        <div id='outer_div'>
+            <svg ref={svgRef}>
+            </svg>
+        </div>
     )
 }

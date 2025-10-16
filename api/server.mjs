@@ -118,7 +118,7 @@ app.get('/similar/:id', async (req, res) => {
 
     const actorIds = movieData.cast.map(actor => actor.id);
     //limit to first 10 actors
-    const limitedActorsIds = actorIds.slice(0, 10);
+    const limitedActorsIds = actorIds.slice(0, 20);
     //query all actors in parallel
     const actorCreditsPromises = limitedActorsIds.map(actorId => fetch(`http://localhost:9005/credits/${actorId}`, {
         method: 'GET',
@@ -139,7 +139,7 @@ app.get('/similar/:id', async (req, res) => {
     // sort by most common and take top 10
     const commonMovieIds = Object.keys(movieIdCounts)
         .sort((a, b) => movieIdCounts[b] - movieIdCounts[a]);
-    const topCommonMovieIds = commonMovieIds.filter(id => id !== originalId).slice(0, 10);
+    const topCommonMovieIds = commonMovieIds.filter(id => id !== originalId).slice(0, 20);
     // for each movieid get details
     const movieDetailsPromises = topCommonMovieIds.map(movieId => fetch(`http://localhost:9005/movie/${movieId}`, {
         method: 'GET',
@@ -152,12 +152,13 @@ app.get('/similar/:id', async (req, res) => {
 
 
     // get cast in common for each movie
-    const castInCommon = {};
+    const responseArray = [];
+
     movieDetails.forEach(movie => {
         const commonCast = movie.cast.filter(actor => actorIds.includes(actor.id));
-        castInCommon[movie.id] = commonCast;
+        responseArray.push({ movieDetail: movie, castInCommon: commonCast })
     });
-    return res.json({ movies: movieDetails, cast_in_common: castInCommon });
+    return res.json(responseArray);
 });
 const PORT = process.env.PORT || 9004;
 
