@@ -66,7 +66,37 @@ a {
   }
 }
 
+
+
+
+
+
+#tooltip {
+  height: 100vh;
+}
+
+#tooltip li {
+  font-size: 1.5em;
+  list-style: none;
+  text-align: left;
+}
+
+#top-left-search {
+  position: absolute;
+}
+
+#searchbar {
+  width: 300px;
+  border-radius: 5px;
+  border: none;
+  padding: 5px;
+  font-size: 1.5em;
+}
+
+.search-result {}
+
 .dropdown-value {
+  max-width: 300px;
   color: black;
   background-color: white;
   text-align: left;
@@ -74,7 +104,17 @@ a {
   padding: 5px;
   margin: 2px;
   list-style: none;
-  ;
+}
+
+.selected-dropdown-value {
+  max-width: 300px;
+  color: black;
+  background-color: rgb(125, 125, 125);
+  text-align: left;
+  border-radius: 5px;
+  padding: 5px;
+  margin: 2px;
+  list-style: none;
 }
 
 .dropdown-value:hover {
@@ -82,11 +122,7 @@ a {
   cursor: pointer;
 }
 
-.movies-list {
-  text-align: left;
-}
-
-.movies-list:hover {
-  cursor: pointer;
-  opacity: 0.8;
+#dropdown-list {
+  padding: 0;
+  margin: 0;
 }

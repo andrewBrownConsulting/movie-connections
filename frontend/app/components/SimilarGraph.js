@@ -13,7 +13,7 @@ export default function SimilarGraph({ movieId, setSelectedMovie }) {
     const [links, setLinks] = useState([]);
 
     async function updateSimilarMovies(mainId) {
-        const width = window.innerWidth;
+        const width = window.innerWidth * 2 / 3;
         const height = window.innerHeight
         function getRadius(number) {
 
@@ -25,7 +25,6 @@ export default function SimilarGraph({ movieId, setSelectedMovie }) {
             return min + (number / scaleRange) * (max - min);
         }
         const similarData = await fetchSimilarMovies(mainId);
-        console.log(similarData);
         for (const entry of similarData) {
             if (cancelLoopRef.current)
                 break;
@@ -47,9 +46,8 @@ export default function SimilarGraph({ movieId, setSelectedMovie }) {
     }
 
     async function getNewMovieData() {
-        const width = window.innerWidth;
+        const width = window.innerWidth * 2 / 3;
         const height = window.innerHeight;
-        console.log('movie id is', movieId)
         cancelLoopRef.current = true;
         await new Promise(resolve => setTimeout(resolve, timeBetweenSpawns));
         cancelLoopRef.current = false;
@@ -62,33 +60,42 @@ export default function SimilarGraph({ movieId, setSelectedMovie }) {
             const id = res.id;
             const title = res.title
             const poster = getTMDBImagePath(res.poster_path, radius);
-            setMovieData([{ id: movieId, rad: radius, image: poster, x: width / 2, y: height / 2, title: title, main: true, visible: 'hidden' }]);
+            setMovieData([{ id: movieId, rad: radius, image: poster, x: width / 2, y: height / 2, title: title, main: true, visible: 'hidden', movieData: res }]);
+            setMainMovieInfo(res);
         });
         updateSimilarMovies(movieId);
     }
     useEffect(() => {
         getNewMovieData();
     }, [movieId]);
-
+    function setMainMovieInfo(info) {
+        console.log(info);
+        const mainCast = info.cast.slice(0, 10);
+        const castList = mainCast.map(actor => '<li>' + actor.name + ' - ' + actor.character + '</li>').join(' ')
+        d3.select('#tooltip').style('visibility', 'visible')
+            .html('<h1>' + info.title + '</h1>'
+                + '<img src=' + getTMDBImagePath(info.poster_path, 1000) + '/>'
+                + '<ul>' + castList + '</ul>'
+            )
+    }
     useEffect(() => {
-        const width = window.innerWidth;
+        const width = window.innerWidth * 2 / 3;
         const height = window.innerHeight;
         function handleMouseOver(e, d) {
             d.visible = 'visible';
-            console.log('mouse over')
-            if (!d.actorsInCommonList)
-                return;
-            d3.select('#tooltip').style('visibility', 'visible')
-                .html('<h1>' + d.title + '</h1>'
-                    + '<h2>Cast in Common</h2>'
-                    + '<ul>'
-                    + d.actorsInCommonList
-                    + '</ul>'
-                )
+            if (d.actorsInCommonList)
+                d3.select('#tooltip').style('visibility', 'visible')
+                    .html('<h1>' + d.title + '</h1>'
+                        + '<h2>Cast in Common</h2>'
+                        + '<ul>'
+                        + d.actorsInCommonList
+                        + '</ul>'
+                    )
         }
         function handleMouseLeave(e, d) {
             d.visible = 'hidden';
-            d3.select('#tooltip').style('visibility', 'hidden');
+            const mainMovie = movieData[0].movieData;
+            setMainMovieInfo(mainMovie);
         }
         function handleMouseMove(e, d) {
             d3.select('#tooltip')
@@ -96,8 +103,9 @@ export default function SimilarGraph({ movieId, setSelectedMovie }) {
                 .style('left', e.offsetX + 150 + 'px');
         }
         const selection = d3.select(svgRef.current).select('g');
-        async function handleClick(id) {
-            setSelectedMovie(id);
+        async function handleClick(e, d) {
+            setSelectedMovie(d.id);
+            handleMouseLeave(e, d)
         }
         const drag = d3.drag()
             .on('drag', (e, d) => {
@@ -152,7 +160,7 @@ export default function SimilarGraph({ movieId, setSelectedMovie }) {
                 .data(movieData, d => d.id)
                 .attr('cx', d => d.x)
                 .attr('cy', d => d.y)
-                .on('click', (e, d) => handleClick(d.id))
+                .on('click', handleClick)
                 .on('mouseover', handleMouseOver)
                 .on('mouseleave', handleMouseLeave)
                 .on('mousemove', handleMouseMove)
@@ -208,7 +216,7 @@ export default function SimilarGraph({ movieId, setSelectedMovie }) {
 
     }, [movieData.length])
     useEffect(() => {
-        const width = window.innerWidth;
+        const width = window.innerWidth * 2 / 3;
         const height = window.innerHeight;
         d3.select(svgRef.current).attr('width', width).attr('height', height).select('g').remove();
         const svgd3 = d3.select(svgRef.current).attr('width', width).attr('height', height);
@@ -217,28 +225,26 @@ export default function SimilarGraph({ movieId, setSelectedMovie }) {
             d3.select('g')
                 .attr('transform', e.transform);
         }
-        const tooltip = d3.select('#outer_div')
-            .append('div')
-            .attr('id', 'tooltip')
-            .attr('anchor', 'middle')
-            .style('position', 'absolute')
-            .style('visibility', 'hidden')
+        const tooltip = d3.select('#tooltip')
+            // .style('visibility', 'hidden')
             .style('background-color', 'white')
             .style("border", "solid")
             .style("border-width", "1px")
             .style("border-radius", "5px")
             .style("padding", "10px")
-            .html('<p>Here is my text</p>')
+            .html('<p></p>')
         const zoom = d3.zoom().on('zoom', handleZoom);
         svgd3.call(zoom);
         return () => d3.select('svg g').remove();
     }, [])
 
-
     return (
-        <div id='outer_div'>
-            <svg ref={svgRef}>
-            </svg>
+        <div className='' id='outer_div'>
+            <div className='row'>
+                <svg className='col-8' ref={svgRef}>
+                </svg>
+                <div id='tooltip' className='col-4 overflow-scroll'></div>
+            </div>
         </div>
     )
 }

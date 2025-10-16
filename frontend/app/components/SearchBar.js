@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 export default function SearchBar({ setSelectedMovie }) {
     const [searchResults, setSearchResults] = useState([]);
     const [searchValue, setSearchValue] = useState("");
-
+    const [selected, setSelected] = useState(0);
 
     function searchMovies(query) {
         if (!query) {
@@ -40,15 +40,38 @@ export default function SearchBar({ setSelectedMovie }) {
         if (!dateString) return '';
         return ` (${new Date(dateString).getFullYear()})`;
     }
+    function handleKeyDown(e) {
+        if (e.key == "ArrowDown") {
+            e.preventDefault()
+            if (selected != 9)
+                setSelected(prev => prev + 1);
+            return;
+        }
+        if (e.key == "ArrowUp") {
+            e.preventDefault()
+            if (selected != 0)
+                setSelected(prev => prev - 1);
+            return;
+        }
+        if (e.key == "Enter") {
+            e.preventDefault()
+            setSelectedMovie(searchResults[selected].id);
+            setSearchValue('');
+            return;
+        }
+        if (e.key == "ArrowLeft" || e.key == "ArrowRight")
+            return;
+        setSelected(0);
+    }
     return (
         <>
-            <input placeholder="Search Movies" value={searchValue} onChange={e => setSearchValue(e.target.value)} />
-            <ul>
+            <input id='searchbar' placeholder="Search Movies" value={searchValue} onChange={e => setSearchValue(e.target.value)} onKeyDown={handleKeyDown} />
+            <ul id='dropdown-list'>
                 {
 
-                    searchResults?.map(movie => {
+                    searchResults?.map((movie, i) => {
                         if (movie.title)
-                            return <li className="dropdown-value" key={movie.id} onClick={(e) => { setSelectedMovie(movie.id); setSearchValue(''); setSearchResults([]); }
+                            return <li className={i == selected ? "selected-dropdown-value" : "dropdown-value"} key={movie.id} onClick={(e) => { setSelectedMovie(movie.id); setSearchValue(''); setSearchResults([]); }
                             }> {movie.title}{getYear(movie.release_date)}</li>
                     })
                 }
