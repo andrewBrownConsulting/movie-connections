@@ -90,23 +90,29 @@ app.get('/credits/:actorId', async (req, res) => {
     }
 
     console.log("TMDB credits query");
-    const tmdbCreditsData = await fetch(`https://api.themoviedb.org/3/person/${actorId}?append_to_response=movie_credits`, {
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxZWE0Yzc3YmM5MjRkMmYyNmMxMTdmYmZkY2ZkNjY2NCIsIm5iZiI6MTcyOTEyNDU4Ni41MjcsInN1YiI6IjY3MTA1OGVhNmY3NzA3YWY0MGZhNjk3MCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.QZOoB4mdc1ubs_5VGNRoPAvXZOAtwJ9t1lBTPBhfKLM`,
-            'Content-Type': 'application/json;charset=utf-8'
-        }
-    }).then(response => response.json());
-    let credits = tmdbCreditsData.movie_credits.cast;
-    const credits_ids = credits.map(member => member.id);
-    cacheMovieSearchResults(`credits:${actorId}`, { credit_ids: credits_ids || [] });
-    return res.json({ credit_ids: credits_ids || [] });
+    try {
+        const tmdbCreditsData = await fetch(`https://api.themoviedb.org/3/person/${actorId}?append_to_response=movie_credits`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxZWE0Yzc3YmM5MjRkMmYyNmMxMTdmYmZkY2ZkNjY2NCIsIm5iZiI6MTcyOTEyNDU4Ni41MjcsInN1YiI6IjY3MTA1OGVhNmY3NzA3YWY0MGZhNjk3MCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.QZOoB4mdc1ubs_5VGNRoPAvXZOAtwJ9t1lBTPBhfKLM`,
+                'Content-Type': 'application/json;charset=utf-8'
+            }
+        }).then(response => response.json());
+
+        let credits = tmdbCreditsData.movie_credits.cast;
+        const credits_ids = credits.map(member => member.id);
+        cacheMovieSearchResults(`credits:${actorId}`, { credit_ids: credits_ids || [] });
+        return res.json({ credit_ids: credits_ids || [] });
+    } catch (error) {
+        console.log('error')
+        return res.json([]);
+    }
 });
 
 app.get('/similar/:id', async (req, res) => {
     const originalId = req.params.id;
     //start by getting actors in this movie
-    const movieData = await fetch(`http://localhost:9005/movie/${originalId}`, {
+    const movieData = await fetch(`https://movie_api.andrewb.site/movie/${originalId}`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json;charset=utf-8',
@@ -120,7 +126,7 @@ app.get('/similar/:id', async (req, res) => {
     //limit to first 10 actors
     const limitedActorsIds = actorIds.slice(0, 20);
     //query all actors in parallel
-    const actorCreditsPromises = limitedActorsIds.map(actorId => fetch(`http://localhost:9005/credits/${actorId}`, {
+    const actorCreditsPromises = limitedActorsIds.map(actorId => fetch(`https://movie_api.andrewb.site/credits/${actorId}`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json;charset=utf-8',
@@ -141,7 +147,7 @@ app.get('/similar/:id', async (req, res) => {
         .sort((a, b) => movieIdCounts[b] - movieIdCounts[a]);
     const topCommonMovieIds = commonMovieIds.filter(id => id !== originalId).slice(0, 20);
     // for each movieid get details
-    const movieDetailsPromises = topCommonMovieIds.map(movieId => fetch(`http://localhost:9005/movie/${movieId}`, {
+    const movieDetailsPromises = topCommonMovieIds.map(movieId => fetch(`https://movie_api.andrewb.site/movie/${movieId}`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json;charset=utf-8',

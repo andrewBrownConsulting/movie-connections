@@ -1,10 +1,10 @@
 export async function fetchSimilarMovies(movieId) {
-    const response = await fetch(`http://localhost:9005/similar/${movieId}`);
+    const response = await fetch(`https://movie_api.andrewb.site/similar/${movieId}`);
     const data = await response.json();
     return data;
 }
 export async function fetchMovieDetails(movieId) {
-    const response = await fetch(`http://localhost:9005/movie/${movieId}`);
+    const response = await fetch(`https://movie_api.andrewb.site/movie/${movieId}`);
     const data = await response.json();
     return data;
 }

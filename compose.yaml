@@ -2,9 +2,7 @@ services:
   web:
     build: frontend
 
-    command: npm run dev
-    environment:
-      - NEXT_SKIP_TURBOPACK=1
+    command: npm start
 
     volumes:
       - ./frontend:/usr/src/app
@@ -63,16 +61,16 @@ services:
     restart: always
     networks:
       - app-net
-  # cloudflare-tunnel:
-  #   image: cloudflare/cloudflared:latest
-  #   command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_KEY}
-  #   restart: unless-stopped
-  #   volumes:
-  #     - ~/.cloudflared:/etc/cloudflared
-  #   depends_on:
-  #     - web
-  #   networks:
-  #     - app-net
+  cloudflare-tunnel:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_KEY}
+    restart: unless-stopped
+    volumes:
+      - ~/.cloudflared:/etc/cloudflared
+    depends_on:
+      - web
+    networks:
+      - app-net
 networks:
   app-net:
     driver: bridge
