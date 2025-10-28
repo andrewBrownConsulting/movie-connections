@@ -3,10 +3,11 @@ import { useEffect, useRef, useState } from 'react'
 import { getMovieWithId, getSimilarMovies } from '../serverFunctions';
 import { getTMDBImagePath } from '../utils';
 const timeBetweenSpawns = 200;
-const minScale = 1 / 50;
-const maxScale = 1 / 15;
-const mainScale = 1 / 10;
+const minScale = 1 / 30;
+const maxScale = 1 / 10;
+const mainScale = 1 / 8;
 const scaleRange = 10;
+
 export default function SimilarGraph({ movieId, setSelectedMovie }) {
   const cancelLoopRef = useRef(false);
   const svgRef = useRef(null);
@@ -26,23 +27,23 @@ export default function SimilarGraph({ movieId, setSelectedMovie }) {
       return min + (number / scaleRange) * (max - min);
     }
     const similarData = await getSimilarMovies(mainId);
-    console.log('similar data:')
-    console.log(similarData);
     for (const entry of similarData) {
       if (cancelLoopRef.current)
         break;
       const newDetail = entry.movieDetail;
       const actorsInCommon = entry.castInCommon;
-      const radius = getRadius(actorsInCommon.length);
+      const rad = getRadius(actorsInCommon.length);
       const actorsInCommonList = actorsInCommon.map(actor => "<li>" + actor.name + "</li>").join(' ')
       const id = newDetail.id;
       //randomize the spawn location
       const x = width * (Math.random())
       const y = height * (Math.random())
-      const poster = getTMDBImagePath(newDetail.poster_path, radius);
+      const image = getTMDBImagePath(newDetail.poster_path, rad);
       const title = newDetail.title;
-      setMovieData(prev => [...prev, { id: id, rad: radius, image: poster, x: x, y: y, title: title, visible: 'hidden', actorsInCommonList: actorsInCommonList }]);
+      const visible = 'hidden'
+      setMovieData(prev => [...prev, { id, rad, image, x, y, title, visible, actorsInCommonList }]);
       setLinks(prev => [...prev, { source: movieId, target: id }]);
+
       await new Promise(resolve =>
         setTimeout(resolve, timeBetweenSpawns));
     }
@@ -64,7 +65,7 @@ export default function SimilarGraph({ movieId, setSelectedMovie }) {
       const id = res.id;
       const title = res.title
       const poster = getTMDBImagePath(res.poster_path, radius);
-      setMovieData([{ id: movieId, rad: radius, image: poster, x: width / 2, y: height / 2, title: title, main: true, visible: 'hidden', movieData: res }]);
+      setMovieData([{ id: movieId, rad: radius, image: poster, x: width / 2, y: height / 2, title: title, visible: 'hidden', movieData: res, }]);
       setMainMovieInfo(res);
     });
     updateSimilarMovies(movieId);
@@ -73,11 +74,20 @@ export default function SimilarGraph({ movieId, setSelectedMovie }) {
     getNewMovieData();
   }, [movieId]);
   function setMainMovieInfo(info) {
+
+    const directorsPrint = info.directors.map(member => member.name).join(', ')
+    const writersPrint = info.writers.map(member => member.name).join(', ')
     const mainCast = info.cast.slice(0, 10);
     const castList = mainCast.map(actor => '<li>' + actor.name + ' - ' + actor.character + '</li>').join(' ')
+    console.log(info);
     d3.select('#tooltip').style('visibility', 'visible')
-      .html('<h1>' + info.title + '</h1>'
-        + '<img src=' + getTMDBImagePath(info.poster_path, 1000) + '/>'
+      .html(
+        '<img  src=' + getTMDBImagePath(info.poster_path, 1000) + '/>'
+        + '<h1>' + info.title + '</h1>'
+        + '<p>Directed by: ' + directorsPrint + '</p>'
+        + '<p>Written by: ' + writersPrint + '</p>'
+        + '<p>' + info.description + '</p>'
+        + '<h2>Cast: </h2>'
         + '<ul>' + castList + '</ul>'
       )
   }
@@ -124,20 +134,17 @@ export default function SimilarGraph({ movieId, setSelectedMovie }) {
       if (!movieData)
         return;
 
-      const circleGroups = selection.selectAll('g')
-        .data(movieData, d => d.id)
-        .enter()
-        .append('g')
 
-      selection.select('defs')
+      const patterns = selection.select('defs')
         .selectAll('pattern')
         .data(movieData, d => d.id)
         .enter()
         .append('pattern')
         .attr('id', d => `image-${d.id}`)
         .attr('width', 1)
-        .attr('height', 1)
-        .selectAll('image')
+        .attr('height', 1);
+
+      const images = patterns.selectAll('image')
         .data(movieData, d => d.id)
         .enter()
         .append('image')
@@ -157,7 +164,6 @@ export default function SimilarGraph({ movieId, setSelectedMovie }) {
         .attr('stroke', '#999')
         .attr('stroke-width', 2)
 
-
       const circles = selection
         .selectAll('circle')
         .data(movieData, d => d.id)
@@ -175,6 +181,7 @@ export default function SimilarGraph({ movieId, setSelectedMovie }) {
         .transition()
         .attr('r', d => d.rad)
 
+
       const titles = selection
         .selectAll('text')
         .data(movieData, d => d.id)
@@ -190,17 +197,9 @@ export default function SimilarGraph({ movieId, setSelectedMovie }) {
         .attr('fill', 'white')
         .attr('stroke', 'black')
         .style('stroke-width', '1px')
-      // .style('stroke-linejoin', 'round')
-      //non working transition
-      // .attr('opacity', 1)
-      // .transition()
-      // .delay(1000)
-      // .duration(1000)
-      // .attr('opacity', 0)
 
     }
     const simulation = d3.forceSimulation(movieData)
-      // .force('center', d3.forceCenter(width / 2, height / 2).strength(1))
       .force('x', d3.forceX(width / 2).strength(0.01))
       .force('y', d3.forceY(height / 2).strength(0.01))
       .force('charge', d3.forceManyBody().strength(-50))
@@ -212,7 +211,6 @@ export default function SimilarGraph({ movieId, setSelectedMovie }) {
     return () => {
       simulation.stop();
     };
-
   }, [movieData.length])
   useEffect(() => {
     const width = window.innerWidth * 2 / 3;
