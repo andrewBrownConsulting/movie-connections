@@ -8,6 +8,8 @@ services:
       - "3000:3000"
     networks:
       - app-net
+    environment:
+      - BASE_API_URL="https://movie_api.andrewb.site/"
 
   api:
     image: andrewb1234/movie-conns-back:latest

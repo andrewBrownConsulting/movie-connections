@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import SearchBar from "./components/SearchBar";
 import SimilarGraph from "./components/SimilarGraph";
 export default function Home() {
