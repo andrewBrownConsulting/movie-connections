@@ -86,6 +86,12 @@ a {
   max-height: 50vh;
   margin:auto;
 }
+
+#tooltip iframe{
+  max-width: 100%; 
+  max-height: 50vh;
+  margin:auto;
+}
 #tooltip ul{
   list-style:none;
   margin:0;
@@ -99,7 +105,10 @@ a {
 #top-left-search {
   position: absolute;
 }
-
+.wideButton{
+  width: 200px;
+  margin:auto;
+}
 #searchbar {
   width: 300px;
   border-radius: 5px;

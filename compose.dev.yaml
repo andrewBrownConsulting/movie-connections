@@ -2,7 +2,6 @@ services:
   web:
     build:
       context: ./frontend
-
     command: npm run dev
     depends_on:
       redis:
@@ -11,7 +10,6 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=development
-
   redis:
     image: "redis:alpine"
     container_name: redis

@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from "react";
 import { searchForMovie } from "../serverFunctions";
+import { getYear } from "../utils";
 export default function SearchBar({ setSelectedMovie }) {
   const [searchResults, setSearchResults] = useState([]);
   const [searchValue, setSearchValue] = useState("");
@@ -22,10 +23,6 @@ export default function SearchBar({ setSelectedMovie }) {
     }, 300); // Adjust the debounce delay as needed
     return () => clearTimeout(delayDebounceFn);
   }, [searchValue]);
-  function getYear(dateString) {
-    if (!dateString) return '';
-    return ` (${new Date(dateString).getFullYear()})`;
-  }
   function handleKeyDown(e) {
     if (e.key == "ArrowDown") {
       e.preventDefault()
@@ -54,7 +51,6 @@ export default function SearchBar({ setSelectedMovie }) {
       <input id='searchbar' placeholder="Search Movies" value={searchValue} onChange={e => setSearchValue(e.target.value)} onKeyDown={handleKeyDown} />
       <ul id='dropdown-list'>
         {
-
           searchResults?.map((movie, i) => {
             if (movie.title)
               return <li className={i == selected ? "selected-dropdown-value" : "dropdown-value"} key={movie.id} onClick={(e) => { setSelectedMovie(movie.id); setSearchValue(''); setSearchResults([]); }

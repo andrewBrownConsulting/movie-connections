@@ -1,7 +1,9 @@
 'use server'
 import client from "./cacheFuncs";
+import { getYear } from "./utils";
+const token = process.env.TMDB_AUTH_TOKEN
 const tmdbHeaders = {
-  'Authorization': `Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxZWE0Yzc3YmM5MjRkMmYyNmMxMTdmYmZkY2ZkNjY2NCIsIm5iZiI6MTcyOTEyNDU4Ni41MjcsInN1YiI6IjY3MTA1OGVhNmY3NzA3YWY0MGZhNjk3MCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.QZOoB4mdc1ubs_5VGNRoPAvXZOAtwJ9t1lBTPBhfKLM`,
+  'Authorization': `Bearer ${token}`,
   'Content-Type': 'application/json;charset=utf-8'
 };
 let cacheHits = 0;
@@ -80,7 +82,12 @@ export async function getMovieWithId(id) {
   let crew = tmdbMovieData.credits.crew;
   let directors = crew.filter(member => member.job == 'Director')
   let writers = crew.filter(member => (member.job == 'Writer' || member.job == 'Screenplay'))
-  const movieData = { id, title, poster_path, trailer, cast, castIds, description, directors, writers };
+  let genres = tmdbMovieData.genres;
+  let year = getYear(tmdbMovieData.release_date);
+  const movieData = {
+    id, title, poster_path, trailer, description, genres, year,
+    cast, castIds, directors, writers
+  };
   client.set('movie:' + id, JSON.stringify(movieData));
   return movieData;
 }
@@ -92,45 +99,57 @@ export async function getSimilarMovies(id) {
   const limitedActorsIds = movieData.castIds.slice(0, 20);
   const directors = movieData.directors;
   const directorIds = directors.map(dir => dir.id);
-  const actorCreditsArrsPromises = limitedActorsIds.map(actorId => getActorCredits(actorId));
+  const writers = movieData.writers;
+  const writerIds = writers.map(mem => mem.id);
 
+  const genres = movieData.genres;
+  const genreIds = genres.map(mem => mem.id);
+
+  const directorCreditPromises = directorIds.map(dir => getDirectorCredits(dir));
+  const directorCreditsArrs = await Promise.all(directorCreditPromises);
+  const actorCreditsArrsPromises = limitedActorsIds.map(actorId => getActorCredits(actorId));
   const actorCreditsArrs = await Promise.all(actorCreditsArrsPromises);
-  const movieIdCounts = {};
+  const movieIdScores = {};
 
   actorCreditsArrs.forEach(creditsArr => {
-    console.log(creditsArr);
     for (const movieId of creditsArr) {
-      movieIdCounts[movieId] = (movieIdCounts[movieId] || 0) + 1;
+      movieIdScores[movieId] = (movieIdScores[movieId] || 0) + 1;
+    }
+  });
+  directorCreditsArrs.forEach(creditsArr => {
+    for (const movieId of creditsArr) {
+      movieIdScores[movieId] = (movieIdScores[movieId] || 0) + 1;
     }
   });
 
-  let commonMovieIds = Object.keys(movieIdCounts)
-    .sort((a, b) => movieIdCounts[b] - movieIdCounts[a]);
+  let commonMovieIds = Object.keys(movieIdScores)
+    .sort((a, b) => movieIdScores[b] - movieIdScores[a]);
 
-  const topCommonMovieIds = commonMovieIds.slice(1, 21);
+  commonMovieIds = commonMovieIds.filter(newId => newId != id)
+  const topCommonMovieIds = commonMovieIds.slice(0, 30);
   // for each movieid get details
   const topMovieDetailsPromises = topCommonMovieIds.map(movieId => getMovieWithId(movieId));
-  const topMovieDetails = await Promise.all(topMovieDetailsPromises);
+  let topMovieDetails = await Promise.all(topMovieDetailsPromises);
+  function isDocumentary(genres) {
+    for (let genre of genres)
+      if (genre.id == 99)
+        return true;
+    return false;
+  }
+  topMovieDetails = topMovieDetails.filter(details => !isDocumentary(details.genres));
+  topMovieDetails = topMovieDetails.slice(0, 20);
   const responseArray = [];
   topMovieDetails.forEach(movie => {
-    const commonCast = movie.cast.filter(actor => limitedActorsIds.includes(actor.id));
-    responseArray.push({ movieDetail: movie, castInCommon: commonCast })
+    const castInCommon = movie.cast.filter(actor => limitedActorsIds.includes(actor.id));
+    const directorsInCommon = movie.directors.filter(dir => directorIds.includes(dir.id));
+    const writersInCommon = movie.writers.filter(mem => writerIds.includes(mem.id));
+    const genresInCommon = movie.genres.filter(mem => genreIds.includes(mem.id));
+    const weight = castInCommon.length + directorsInCommon.length + writersInCommon.length + genresInCommon.length;
+    responseArray.push({ movieDetail: movie, castInCommon, directorsInCommon, writersInCommon, genresInCommon, weight })
   });
   return responseArray;
 }
 
-async function getDirectorCredits(actorId) {
-  const cacheVal = await client.get('actor:' + actorId)
-  incrementCache(cacheVal != null);
-  if (cacheVal != null)
-    return await JSON.parse(cacheVal);
-  const tmdbCreditsData = await fetchWithRetry(`https://api.themoviedb.org/3/person/${actorId}?append_to_response=movie_credits`,
-    'GET', tmdbHeaders)
-  let credits = tmdbCreditsData.movie_credits.cast;
-  const creditIds = credits.map(member => member.id);
-  client.set('actor:' + actorId, JSON.stringify(creditIds));
-  return creditIds;
-}
 
 async function getActorCredits(actorId) {
   const cacheVal = await client.get('actor:' + actorId)
@@ -145,3 +164,16 @@ async function getActorCredits(actorId) {
   return creditIds;
 }
 
+async function getDirectorCredits(directorId) {
+  const cacheVal = await client.get('director:' + directorId)
+  incrementCache(cacheVal != null);
+  if (cacheVal != null)
+    return await JSON.parse(cacheVal);
+  const tmdbCreditsData = await fetchWithRetry(`https://api.themoviedb.org/3/person/${directorId}/movie_credits`,
+    'GET', tmdbHeaders)
+  let credits = tmdbCreditsData.crew;
+  credits = credits.filter(credit => credit.job == 'Director')
+  const creditIds = credits.map(member => member.id);
+  client.set('director:' + directorId, JSON.stringify(creditIds));
+  return creditIds;
+}

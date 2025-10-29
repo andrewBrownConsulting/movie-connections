@@ -8,3 +8,15 @@ export function getTMDBImagePath(posterPath, nodeRadius) {
   }
   return `https://image.tmdb.org/t/p/w92${posterPath}`;
 }
+
+export function getYear(dateString) {
+  if (!dateString) return '';
+  return ` (${new Date(dateString).getFullYear()})`;
+}
+export function getTrailer(trailer) {
+  if (trailer == null)
+    return ''
+  const key = trailer.key;
+  const url = "https://www.youtube.com/embed/" + key;
+  return `<iframe width="1234" height="532" src=${url} frameborder="0" allowfullscreen></iframe>`
+}
